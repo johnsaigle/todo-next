@@ -3,6 +3,9 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::process;
+use std::error::Error;
+
+const MEETING_FILEPATH: &str = "meetings.csv";
 
 #[derive(Debug, serde::Deserialize)]
 struct Meeting {
@@ -13,6 +16,13 @@ struct Meeting {
 }
 
 fn main() {
+    if let Err(e) = run() {
+        eprintln!("Error: {}", e);
+        process::exit(1);
+    }
+}
+
+fn run() -> Result<(), Box<dyn Error>> {
     let today = Local::now().date_naive();
     
     let target_date = if today.weekday() == Weekday::Fri {
@@ -32,35 +42,54 @@ fn main() {
     
     if filepath.exists() {
         println!("{}", filepath.display());
-        return;
+        return Ok(());
     }
 
-    // TODO: Define data CSV file with recurring meetings
-    meeting_filepath = "meetings.csv;"
-    let mut rdr = csv::Reader::from_reader(meeting_filepath);
-
+    // Parse CSV file with recurring meetings
+    let mut rdr = csv::Reader::from_path(MEETING_FILEPATH)?;
+    
+    let target_weekday = target_date.weekday();
+    let mut meetings = Vec::new();
+    
     for result in rdr.deserialize() {
-        // Notice that we need to provide a type hint for automatic
-        // deserialization.
-        let record: Record = result?;
-        println!("{:?}", record);
+        let meeting: Meeting = result?;
+        
+        // Check if this meeting occurs on the target day
+        // Match the first 3 characters (e.g., "Mon" matches "Monday")
+        let meeting_day_prefix = meeting.day.to_lowercase().chars().take(3).collect::<String>();
+        let target_day_prefix = format!("{:?}", target_weekday).to_lowercase();
+        
+        if meeting_day_prefix == target_day_prefix {
+            meetings.push(meeting);
+        }
     }
-
-    // format meeting
-    // title = csv[0]
+    
+    // Format meetings section
+    let meetings_text = if meetings.is_empty() {
+        String::from("-")
+    } else {
+        meetings
+            .iter()
+            .map(|m| format!("- {} @ {}", m.title, m.time))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
     
     let content = format!(
         r#"# {}
 ## Musts
 - 
+
 ### Meetings
--
+{}
+
 ## Other
 - 
+
 ## Done
 ### Tasks
 "#,
-        title
+        title, meetings_text
     );
     
     if let Err(e) = fs::write(&filepath, content) {
@@ -69,4 +98,5 @@ fn main() {
     }
     
     println!("{}", filepath.display());
+    Ok(())
 }
