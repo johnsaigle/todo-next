@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::process;
 use std::error::Error;
 
-const MEETING_FILEPATH: &str = "meetings.csv";
+const MEETINGS_CSV: &str = include_str!("../meetings.csv");
 
 #[derive(Debug, serde::Deserialize)]
 struct Meeting {
@@ -45,8 +45,8 @@ fn run() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    // Parse CSV file with recurring meetings
-    let mut rdr = csv::Reader::from_path(MEETING_FILEPATH)?;
+    // Parse embedded CSV file with recurring meetings
+    let mut rdr = csv::Reader::from_reader(MEETINGS_CSV.as_bytes());
     
     let target_weekday = target_date.weekday();
     let mut meetings = Vec::new();

@@ -18,7 +18,13 @@ Sprint Planning,9,Thursday
 All Hands,11,Friday
 ```
 
-Run `cargo run` or invoke the binary wherever you placed it.
+If you want to update the meetings list, you would:
+     1. Edit meetings.csv in the source directory
+     2. Rebuild with cargo build --release
+     3. Replace the old binary
+
+* Run `cargo build`, which embeds the `meetings.csv` string in the binary.
+* Then run e.g. `cargo run`.
 
 Creates `~/scrap/todo-$(tomorrow's date).md` with this format:
 
