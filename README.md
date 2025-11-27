@@ -6,7 +6,7 @@ Markdown TODO list generator. Workflow:
 - Check-in first thing tomorrow morning
 
 ## Usage
-Create `meetings.csv`, e.g.
+Edit `meetings.csv`, and complete with your info, e.g.:
 
 ```
 title,time,day
