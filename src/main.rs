@@ -77,6 +77,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     
     let content = format!(
         r#"# {}
+
 ## Musts
 - 
 
@@ -87,6 +88,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 - 
 
 ## Done
+
 ### Tasks
 "#,
         title, meetings_text
