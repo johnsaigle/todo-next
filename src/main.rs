@@ -6,11 +6,19 @@ use std::process;
 use std::error::Error;
 
 const MEETINGS_CSV: &str = include_str!("../meetings.csv");
+const TASKS_CSV: &str = include_str!("../tasks.csv");
 
 #[derive(Debug, serde::Deserialize)]
 struct Meeting {
     title: String,
     time: String,
+    // day of the week
+    day: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct Task {
+    title: String,
     // day of the week
     day: String,
 }
@@ -45,24 +53,51 @@ fn run() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    // Parse embedded CSV file with recurring meetings
-    let mut rdr = csv::Reader::from_reader(MEETINGS_CSV.as_bytes());
-    
     let target_weekday = target_date.weekday();
+    let target_day_prefix = format!("{:?}", target_weekday).to_lowercase();
+    
+    // Parse embedded CSV file with recurring tasks
+    let mut tasks_rdr = csv::Reader::from_reader(TASKS_CSV.as_bytes());
+    let mut tasks = Vec::new();
+    
+    for result in tasks_rdr.deserialize() {
+        let task: Task = result?;
+        
+        // Check if this task occurs on the target day
+        // Match the first 3 characters (e.g., "Mon" matches "Monday")
+        let task_day_prefix = task.day.to_lowercase().chars().take(3).collect::<String>();
+        
+        if task_day_prefix == target_day_prefix {
+            tasks.push(task);
+        }
+    }
+    
+    // Parse embedded CSV file with recurring meetings
+    let mut meetings_rdr = csv::Reader::from_reader(MEETINGS_CSV.as_bytes());
     let mut meetings = Vec::new();
     
-    for result in rdr.deserialize() {
+    for result in meetings_rdr.deserialize() {
         let meeting: Meeting = result?;
         
         // Check if this meeting occurs on the target day
         // Match the first 3 characters (e.g., "Mon" matches "Monday")
         let meeting_day_prefix = meeting.day.to_lowercase().chars().take(3).collect::<String>();
-        let target_day_prefix = format!("{:?}", target_weekday).to_lowercase();
         
         if meeting_day_prefix == target_day_prefix {
             meetings.push(meeting);
         }
     }
+    
+    // Format tasks section
+    let tasks_text = if tasks.is_empty() {
+        String::from("- ")
+    } else {
+        tasks
+            .iter()
+            .map(|t| format!("- {}", t.title))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
     
     // Format meetings section
     let meetings_text = if meetings.is_empty() {
@@ -79,7 +114,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         r#"# {}
 
 ## Musts
-- 
+{}
 
 ### Meetings
 {}
@@ -91,7 +126,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 
 ### Tasks
 "#,
-        title, meetings_text
+        title, tasks_text, meetings_text
     );
     
     if let Err(e) = fs::write(&filepath, content) {
