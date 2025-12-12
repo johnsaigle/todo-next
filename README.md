@@ -5,26 +5,53 @@ Markdown TODO list generator. Workflow:
 - Write down the most important things to do tomorrow
 - Check-in first thing tomorrow morning
 
+## Setup
+
+1. Copy the example CSV files to create your personal configuration:
+   ```bash
+   cp meetings.csv.example meetings.csv
+   cp tasks.csv.example tasks.csv
+   ```
+
+2. Edit `meetings.csv` with your recurring meetings:
+   ```csv
+   title,time,day
+   Team Standup,9,Monday
+   Project Review,2,Monday
+   1-on-1 with Manager,10,Tuesday
+   Design Sync,3,Wednesday
+   Sprint Planning,9,Thursday
+   All Hands,11,Friday
+   ```
+
+3. Edit `tasks.csv` with your recurring tasks:
+   ```csv
+   title,day
+   Review email and calendar,Monday
+   Weekly planning,Monday
+   Code review,Tuesday
+   ```
+
+4. Build the binary:
+   ```bash
+   cargo build --release
+   ```
+
 ## Usage
-Edit `meetings.csv`, and complete with your info, e.g.:
 
-```
-title,time,day
-Team Standup,9,Monday
-Project Review,2,Monday
-1-on-1 with Manager,10,Tuesday
-Design Sync,3,Wednesday
-Sprint Planning,9,Thursday
-All Hands,11,Friday
-```
+* Run the binary from the project directory (it reads CSV files at runtime):
+  ```bash
+  cargo run
+  ```
+  or
+  ```bash
+  ./target/release/todo-next
+  ```
 
-If you want to update the meetings list, you would:
-     1. Edit meetings.csv in the source directory
-     2. Rebuild with cargo build --release
-     3. Replace the old binary
-
-* Run `cargo build`, which embeds the `meetings.csv` string in the binary.
-* Then run e.g. `cargo run`.
+* The CSV files (`meetings.csv` and `tasks.csv`) are gitignored, so you can:
+  - Modify them locally without git conflicts
+  - Pull updates from the repository without clobbering your personal configuration
+  - Keep your personal schedule private
 
 Creates `~/scrap/todo-$(tomorrow's date).md` with this format:
 

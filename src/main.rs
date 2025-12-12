@@ -5,9 +5,6 @@ use std::path::PathBuf;
 use std::process;
 use std::error::Error;
 
-const MEETINGS_CSV: &str = include_str!("../meetings.csv");
-const TASKS_CSV: &str = include_str!("../tasks.csv");
-
 #[derive(Debug, serde::Deserialize)]
 struct Meeting {
     title: String,
@@ -48,6 +45,45 @@ fn run() -> Result<(), Box<dyn Error>> {
     });
     let filepath = PathBuf::from(home).join("scrap").join(format!("todo-{}.md", date));
     
+    // Look for CSV files in current directory first, then next to executable
+    let cwd = env::current_dir()?;
+    let exe_dir = env::current_exe()
+        .ok()
+        .and_then(|path| path.parent().map(|p| p.to_path_buf()));
+    
+    let meetings_csv_path = if cwd.join("meetings.csv").exists() {
+        cwd.join("meetings.csv")
+    } else if let Some(ref dir) = exe_dir {
+        dir.join("meetings.csv")
+    } else {
+        PathBuf::from("meetings.csv")
+    };
+    
+    let tasks_csv_path = if cwd.join("tasks.csv").exists() {
+        cwd.join("tasks.csv")
+    } else if let Some(ref dir) = exe_dir {
+        dir.join("tasks.csv")
+    } else {
+        PathBuf::from("tasks.csv")
+    };
+    
+    // Check if CSV files exist, provide helpful error message if not
+    if !meetings_csv_path.exists() {
+        eprintln!("Error: meetings.csv not found at {}", meetings_csv_path.display());
+        eprintln!("Copy meetings.csv.example to meetings.csv and customize it");
+        process::exit(1);
+    }
+    
+    if !tasks_csv_path.exists() {
+        eprintln!("Error: tasks.csv not found at {}", tasks_csv_path.display());
+        eprintln!("Copy tasks.csv.example to tasks.csv and customize it");
+        process::exit(1);
+    }
+    
+    // Read CSV files from filesystem
+    let meetings_csv = fs::read_to_string(&meetings_csv_path)?;
+    let tasks_csv = fs::read_to_string(&tasks_csv_path)?;
+    
     if filepath.exists() {
         println!("{}", filepath.display());
         return Ok(());
@@ -56,8 +92,8 @@ fn run() -> Result<(), Box<dyn Error>> {
     let target_weekday = target_date.weekday();
     let target_day_prefix = format!("{:?}", target_weekday).to_lowercase();
     
-    // Parse embedded CSV file with recurring tasks
-    let mut tasks_rdr = csv::Reader::from_reader(TASKS_CSV.as_bytes());
+    // Parse CSV file with recurring tasks
+    let mut tasks_rdr = csv::Reader::from_reader(tasks_csv.as_bytes());
     let mut tasks = Vec::new();
     
     for result in tasks_rdr.deserialize() {
@@ -72,8 +108,8 @@ fn run() -> Result<(), Box<dyn Error>> {
         }
     }
     
-    // Parse embedded CSV file with recurring meetings
-    let mut meetings_rdr = csv::Reader::from_reader(MEETINGS_CSV.as_bytes());
+    // Parse CSV file with recurring meetings
+    let mut meetings_rdr = csv::Reader::from_reader(meetings_csv.as_bytes());
     let mut meetings = Vec::new();
     
     for result in meetings_rdr.deserialize() {
