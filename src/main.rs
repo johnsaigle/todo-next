@@ -5,6 +5,10 @@ use std::path::PathBuf;
 use std::process;
 use std::error::Error;
 
+// Embed the example CSV files in the binary
+const DEFAULT_MEETINGS_CSV: &str = include_str!("../meetings.csv.example");
+const DEFAULT_TASKS_CSV: &str = include_str!("../tasks.csv.example");
+
 #[derive(Debug, serde::Deserialize)]
 struct Meeting {
     title: String,
@@ -43,41 +47,42 @@ fn run() -> Result<(), Box<dyn Error>> {
         eprintln!("Error: HOME environment variable not set");
         process::exit(1);
     });
-    let filepath = PathBuf::from(home).join("scrap").join(format!("todo-{}.md", date));
+    let filepath = PathBuf::from(&home).join("scrap").join(format!("todo-{}.md", date));
     
-    // Look for CSV files in current directory first, then next to executable
+    // Look for CSV files in the following order:
+    // 1. Current directory (for development)
+    // 2. Config directory (~/.config/todo-next/)
     let cwd = env::current_dir()?;
-    let exe_dir = env::current_exe()
-        .ok()
-        .and_then(|path| path.parent().map(|p| p.to_path_buf()));
+    let config_dir = PathBuf::from(&home).join(".config").join("todo-next");
     
     let meetings_csv_path = if cwd.join("meetings.csv").exists() {
         cwd.join("meetings.csv")
-    } else if let Some(ref dir) = exe_dir {
-        dir.join("meetings.csv")
     } else {
-        PathBuf::from("meetings.csv")
+        config_dir.join("meetings.csv")
     };
     
     let tasks_csv_path = if cwd.join("tasks.csv").exists() {
         cwd.join("tasks.csv")
-    } else if let Some(ref dir) = exe_dir {
-        dir.join("tasks.csv")
     } else {
-        PathBuf::from("tasks.csv")
+        config_dir.join("tasks.csv")
     };
     
-    // Check if CSV files exist, provide helpful error message if not
+    // Auto-create config directory and default CSV files on first run
+    if !config_dir.exists() {
+        fs::create_dir_all(&config_dir)?;
+        eprintln!("Created config directory: {}", config_dir.display());
+    }
+    
     if !meetings_csv_path.exists() {
-        eprintln!("Error: meetings.csv not found at {}", meetings_csv_path.display());
-        eprintln!("Copy meetings.csv.example to meetings.csv and customize it");
-        process::exit(1);
+        fs::write(&meetings_csv_path, DEFAULT_MEETINGS_CSV)?;
+        eprintln!("Created default meetings.csv at: {}", meetings_csv_path.display());
+        eprintln!("Edit this file to customize your recurring meetings");
     }
     
     if !tasks_csv_path.exists() {
-        eprintln!("Error: tasks.csv not found at {}", tasks_csv_path.display());
-        eprintln!("Copy tasks.csv.example to tasks.csv and customize it");
-        process::exit(1);
+        fs::write(&tasks_csv_path, DEFAULT_TASKS_CSV)?;
+        eprintln!("Created default tasks.csv at: {}", tasks_csv_path.display());
+        eprintln!("Edit this file to customize your recurring tasks");
     }
     
     // Read CSV files from filesystem

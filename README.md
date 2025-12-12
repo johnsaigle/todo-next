@@ -5,53 +5,57 @@ Markdown TODO list generator. Workflow:
 - Write down the most important things to do tomorrow
 - Check-in first thing tomorrow morning
 
-## Setup
+## Installation
 
-1. Copy the example CSV files to create your personal configuration:
-   ```bash
-   cp meetings.csv.example meetings.csv
-   cp tasks.csv.example tasks.csv
-   ```
+### From Source
 
-2. Edit `meetings.csv` with your recurring meetings:
-   ```csv
-   title,time,day
-   Team Standup,9,Monday
-   Project Review,2,Monday
-   1-on-1 with Manager,10,Tuesday
-   Design Sync,3,Wednesday
-   Sprint Planning,9,Thursday
-   All Hands,11,Friday
-   ```
+```bash
+cargo install --path .
+```
 
-3. Edit `tasks.csv` with your recurring tasks:
-   ```csv
-   title,day
-   Review email and calendar,Monday
-   Weekly planning,Monday
-   Code review,Tuesday
-   ```
+### From crates.io (when published)
 
-4. Build the binary:
-   ```bash
-   cargo build --release
-   ```
+```bash
+cargo install todo-next
+```
 
 ## Usage
 
-* Run the binary from the project directory (it reads CSV files at runtime):
-  ```bash
-  cargo run
-  ```
-  or
-  ```bash
-  ./target/release/todo-next
-  ```
+Just run the binary:
+```bash
+todo-next
+```
 
-* The CSV files (`meetings.csv` and `tasks.csv`) are gitignored, so you can:
-  - Modify them locally without git conflicts
-  - Pull updates from the repository without clobbering your personal configuration
-  - Keep your personal schedule private
+On first run, it will automatically:
+- Create `~/.config/todo-next/` directory
+- Generate `meetings.csv` with example recurring meetings
+- Generate `tasks.csv` with example recurring tasks
+
+Then edit the CSV files to customize your schedule:
+- Edit `~/.config/todo-next/meetings.csv` for your recurring meetings
+- Edit `~/.config/todo-next/tasks.csv` for your recurring tasks
+
+### CSV File Format
+
+**meetings.csv:**
+```csv
+title,time,day
+Team Standup,9,Monday
+Project Review,2,Monday
+1-on-1 with Manager,10,Tuesday
+```
+
+**tasks.csv:**
+```csv
+title,day
+Review email and calendar,Monday
+Weekly planning,Monday
+Code review,Tuesday
+```
+
+### Development
+
+For local development, you can place `meetings.csv` and `tasks.csv` in the current directory, and they will take precedence over the config directory files.
 
 Creates `~/scrap/todo-$(tomorrow's date).md` with this format:
 
